@@ -118,15 +118,13 @@ def process_data(data_path):
     label_names = np.array(headers[header_start:])
     compnames = np.array(headers[0:header_start])
 
-    dataframe_labels = pd.read_csv(data_path, delimiter=',', usecols=[16, 17])
-    dataframe_labels.columns = ['Participant', 'Phase']
+    dataframe_labels = pd.read_csv(data_path, delimiter=',', usecols=[16])
+    dataframe_labels.columns = ['Participant']
     data = data_set[:, 0:header_start]
 
     ID = dataframe_labels.iloc[:, 0].unique()
     start_test, end_test = get_start_end_indices(dataframe_labels)
 
-    MIN = []
-    MAX = []
     breath_time = []
     sData_data_df = pd.DataFrame(data)
     sData_data_df.columns = compnames
@@ -136,27 +134,9 @@ def process_data(data_path):
         end = end_test[i]
         bt = np.diff(sData_data_df.iloc[start:end, 0].to_numpy(), prepend=0)
         breath_time.append(bt)
-        MIN.append(np.nanmin(bt))
-        MAX.append(np.nanmax(bt))
 
     sData_data_df.iloc[:, 0] = pd.Series(np.concatenate(breath_time))
-    data_index_0 = sData_data_df[sData_data_df['HR'] == 0].index
-    sData_data_df.loc[data_index_0,'HR'] = np.nan
-
-    start_exercise = []
-    end_exercise = []
-    for i in range(len(ID)):
-        ip = dataframe_labels[start_test[i]:end_test[i]].groupby('Phase').head(1)
-        start_exercise.append(ip[ip['Phase'] == 'EXERCISE'].index[0])
-        end_exercise.append(dataframe_labels[start_test[i]:end_test[i]][dataframe_labels[start_test[i]:end_test[i]]['Phase'] == 'EXERCISE'].index[-1])
-    exercise_cell = [sData_data_df.iloc[start_exercise[i]:end_exercise[i]+1].to_numpy() for i in range(len(ID))]
-    labels_exercise = [np.repeat(ID[i], len(exercise_cell[i])) for i in range(len(ID))]
-    allLabels = np.concatenate(labels_exercise)
-    data_exercise_df = pd.DataFrame(np.vstack(exercise_cell))
-    data_exercise_df.columns = compnames
-    labels_exercise_df = pd.DataFrame(allLabels)
-    labels_exercise_df.columns = ['Participant']
-    exercise_df = pd.concat([data_exercise_df, labels_exercise_df], axis=1)
+    exercise_df = pd.concat([sData_data_df, dataframe_labels], axis=1)
     
     return exercise_df
     
