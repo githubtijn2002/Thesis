@@ -174,3 +174,36 @@ def Create_som(exercise_df, length_prime):
 #        a.append('')
     sData_exercise_norm['labels'] = labels_exercise_df.to_numpy()
     return sData_exercise, sData_exercise_copy, sData_exercise_norm, compnames
+
+def subplot_mdp(axs, subplot_coords, x, mean_errors, convolve=False, window_size=5, norm=False):
+    mean_error_train =  mean_errors['train']
+    mean_error_LC = mean_errors['LC']
+    mean_error_ME = mean_errors['ME']
+    if norm:
+        axs[subplot_coords].hlines(0, 0, 100, 'k', '--', label='Controls')
+        lc = mean_error_LC - mean_error_train
+        me = mean_error_ME - mean_error_train
+        lc[lc < 0] = 0
+        me[me < 0] = 0
+    if convolve:
+        if norm == False:
+            controls = np.convolve(mean_error_train, np.ones(window_size) / window_size, mode='same')
+            lc = np.convolve(mean_error_LC, np.ones(window_size) / window_size, mode='same')
+            me = np.convolve(mean_error_ME, np.ones(window_size) / window_size, mode='same')
+        else:
+            lc = np.convolve(lc, np.ones(window_size) / window_size, mode='same')
+            me = np.convolve(me, np.ones(window_size) / window_size, mode='same')
+    else:
+        lc = mean_error_LC
+        me = mean_error_ME
+    if norm: 
+        axs[subplot_coords].hlines(0, 0, 100, 'k', '--', label='Controls')
+    else:
+        axs[subplot_coords].plot(x, mean_error_train, 'b', label='Controls')
+    axs[subplot_coords].plot(x, lc, 'r', label='LC')
+    axs[subplot_coords].plot(x, me, 'g', label='ME')
+    axs[subplot_coords].set_xlim([1, 100])
+    axs[subplot_coords].set_xlabel('Exercise (%)')
+    axs[subplot_coords].set_ylabel('Quantization Error')
+    axs[subplot_coords].set_title('Movement Deviation Profile' + (' moving average' if convolve else '') + (' (Controls subtracted)' if norm else ''))
+    axs[subplot_coords].legend()
